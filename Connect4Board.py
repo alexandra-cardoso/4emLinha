@@ -3,7 +3,6 @@
 # =========================
 import numpy as np
 
-
 class Connect4Board:
     def __init__(self, rowns=6, cols=7, n_connect = 4):
         self.rows = rowns
