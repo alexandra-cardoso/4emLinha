@@ -69,9 +69,9 @@ class Connect4Game:
 # =========================
 
 if __name__ == "__main__":
-    #p1 = HumanPlayer(piece=1)
-    p1 = RandomAIPlayer(piece=1)
+    p1 = HumanPlayer(piece=1)
+    #p1 = RandomAIPlayer(piece=1)
     p2 = RandomAIPlayer(piece=2)
     #p2 = HumanPlayer(piece=2)
     game = Connect4Game()
-    game.run_game(p1, p2, headless= True)
+    game.run_game(p1, p2, headless= False)
