@@ -1,43 +1,119 @@
-from Player import Player
+import math
 import random
+import numpy as np
+from Player import Player
+
+class MCTSNode: #temos de criar esta classe de nós para  guardar a árvore
+    def __init__(self, board, parent = None, move = None):
+        self.board = board #o estado do tabuleiro neste nó
+        self.parent = parent #nó pai: para a Retropropagação
+        self.move = move #jogada que nos trouxe a este estado
+
+        self.children = [] #nós filhos: proxs jogadas
+        self.wins = 0 #quantas vitórias
+        self.visits = 0 #quantas vezes explorámos o nó
+
+        self.untried_moves = board.get_valid_moves() # jogadas a partir deste estado ainda não expandidas
+    
+    def uct_score(self, c_param = 1.41): #calcular a formula UCB1
+        if self.visits == 0:
+            return float('inf') #damos prioridade a caminhos não explorados
+        
+        #fórmula:
+        exploitation = self.wins / self.visits
+        exploration = c_param * math.sqrt(math.log(self.parent.visits) / self.visits)
+        return exploitation + exploration
+
+
+
 
 class MCTSAIPlayer (Player):
-    def __init__(self, piece, iters=1000):
+    def __init__(self, piece, max_iterations=1000):
         super().__init__(piece)
-        self.iters = iters #nº variavel de iterações
+        self.max_iterations = max_iterations #nº variavel de iterações
     
-    
+
     def get_move(self, board):
-        moves = board.get_valid_moves()
+        root = MCTSNode(board) #raiz da árvore é o estado atual do jogo
         
-        if len(moves) == 1:
-            return moves[0]
-        
-        move_valor = {move: 0 for move in moves}
-        for _ in range(self.iters):
-            move = random.choice(moves)
-            tempBoard = board.copy()
-            tempBoard.drop_piece(move, self.piece)
-            resultado = self.simulate(tempBoard)
+        for _ in range(self.max_iterations):
+            node = root
+
+            #fase de seleção:
+            while not node.untried_moves and node.children: #enquanto o nó já foi expandido totalmente e o jogo n acabou
+                node = max(node.children, key = lambda c: c.uct_score()) #escolhe o filho com maior uct_score
+
+            #fase de expansão:
+            if node.untried_moves:
+                move = random.choice(node.untried_moves) #vamos escolher uma jogada aleatória dos movimentos ainda por testar
+                node.untried_moves.remove(move) # e vamos removê-la das não testadas
+
+                #se a raiz é a nossa peça, os filhos de profundidade ímpar são do oponente
+                current_piece = self.piece if (self.get_depth(node) % 2 == 0) else (2 if self.piece == 1 else 1)
+
+                new_board = node.board.copy() #cria um novo tabuleiro
+                new_board.drop_piece(move, current_piece) #faz a jogada
+
+                new_node = MCTSNode(new_board, parent = node, move = move) #criamos o novo filho, resultante desta jogada
+                node.children.append(new_node)
+
+                node = new_node
+
+            #fase 3: simulação 
+            resultado = self.simulate(node.board) #jogar à sorte a partir do nó onde parámos, até o jogo acabar
+
+            #fase backpropagation
+            while node is not None:
+                node.visits += 1
+                if resultado != 0:
+                    node_piece = self.piece if (self.get_depth(node) % 2 != 0) else (2 if self.piece == 1 else 1)
+                    if resultado == node_piece:
+                        node.wins += 1
+                    elif resultado != 0:
+                        pass
+                    
+                node = node.parent
             
-            if resultado == self.piece:
-                move_valor[move] += 1
+        #no fim das iterações
+        if not root.children:
+            valid_moves = board.get_valid_moves()
+            return random.choice(valid_moves) if valid_moves else None
         
-        return max(move_valor, key = move_valor.get)
+        best_child = max(root.children, key = lambda c: c.visits)
+        return best_child.move
+        
+    def get_depth(self, node):
+        depth = 0
+        while node.parent is not None:
+            depth += 1
+            node = node.parent
+        return depth
     
+
     def simulate(self, board):
         tabuleiro = board.copy()
-        opponent = 2 if self.piece == 1 else 1
+        opponent = 2 if self.piece == 1 else 1 # vamor buscar o nosso oponente
         
-        if board.is_board_full():
-            print("Empate")
-        elif board.check_winner(self.piece):
-            print("És o vencedor")
-        elif board.check_winner(opponent):
-            print("Perdeste")
+        if tabuleiro.is_board_full(): #se estiver tudo cheio, houve um empate
+            return 0
+        elif tabuleiro.check_winner(self.piece): #podemos ser nós os vencedores
+            return self.piece
+        elif tabuleiro.check_winner(opponent): #ou pode ser o nosso oponente
+            return opponent
+        
+        p1_count = np.count_nonzero(tabuleiro.grid == 1)
+        p2_count = np.count_nonzero(tabuleiro.grid == 2)
+        current_piece = 1 if p1_count == p2_count else 2
 
-        #resto da logica jogo
-        
-        pass
-    
-    
+        while not tabuleiro.is_board_full():
+            moves = tabuleiro.get_valid_moves()
+            if not moves: break
+            move = random.choice(moves)
+
+            tabuleiro.drop_piece(move, current_piece)
+            if tabuleiro.check_winner(current_piece):
+                return current_piece
+            
+            current_piece = 2 if current_piece == 1 else 1
+            
+        return 0
