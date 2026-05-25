@@ -18,12 +18,12 @@ class MCTSNode: #temos de criar esta classe de nós para  guardar a árvore
     
     def uct_score(self, c_param = 1.41): #calcular a formula UCB1
         if self.visits == 0:
-            return float('inf') #damos prioridade a caminhos não explorados
+            return float('inf') #damos prioridade a nós não explorados
         
         #fórmula:
-        exploitation = self.wins / self.visits
-        exploration = c_param * math.sqrt(math.log(self.parent.visits) / self.visits)
-        return exploitation + exploration
+        exploitation = self.wins / self.visits #favorece nós com + vitórias
+        exploration = c_param * math.sqrt(math.log(self.parent.visits) / self.visits) #favorece nós - explorados
+        return exploitation + exploration #valor final UCT
 
 
 
@@ -61,15 +61,15 @@ class MCTSAIPlayer (Player):
                 new_board.drop_piece(move, next_piece) #faz a jogada
 
                 new_node = MCTSNode(new_board, parent = node, move = move, current_piece=next_piece) #criamos o novo filho, resultante desta jogada
-                node.children.append(new_node)
-                node = new_node
+                node.children.append(new_node) #ligamos o filho ao pai
+                node = new_node #continuamos pelo novo nó
 
             #fase 3: simulação 
             resultado = self.simulate(node.board, node.current_piece) #jogar à sorte a partir do nó onde parámos, até o jogo acabar
 
             #fase backpropagation
             while node is not None:
-                node.visits += 1
+                node.visits += 1 #atualizamos estatísticas ao subir na árvore
                 if resultado != 0 and resultado == node.current_piece:
                     node.wins += 1
                     
@@ -85,8 +85,9 @@ class MCTSAIPlayer (Player):
         
 
     def simulate(self, board, last_piece):
-        tabuleiro = board.copy()
+        tabuleiro = board.copy() #copiamos o tabuleiro para não alterar o original
         
+        #verificamos se o jogo terminou
         if tabuleiro.check_winner(1): #podemos ser nós os vencedores
             return 1
         if tabuleiro.check_winner(2): #ou pode ser o nosso oponente
@@ -94,17 +95,17 @@ class MCTSAIPlayer (Player):
         if tabuleiro.is_board_full(): #se estiver tudo cheio, houve um empate
             return 0
         
-        current_piece = 2 if last_piece == 1 else 1
+        current_piece = 2 if last_piece == 1 else 1 #prox jogador a jogar
         
-        while not tabuleiro.is_board_full():
+        while not tabuleiro.is_board_full(): #simulação aleatória até o fim do jogo
             moves = tabuleiro.get_valid_moves()
-            if not moves: break
-            move = random.choice(moves)
+            if not moves: break #se não há jogadas disponíveis, temos um empate
+            move = random.choice(moves) #escolhemos uma jogada aleatória
 
-            tabuleiro.drop_piece(move, current_piece)
-            if tabuleiro.check_winner(current_piece):
+            tabuleiro.drop_piece(move, current_piece) #executa a jogada encontrada
+            if tabuleiro.check_winner(current_piece): #verifica se houve vitória
                 return current_piece
             
-            current_piece = 2 if current_piece == 1 else 1
+            current_piece = 2 if current_piece == 1 else 1 #trocamos de jogador
             
-        return 0
+        return 0 #ninguém ganhou
