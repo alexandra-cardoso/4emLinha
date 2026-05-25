@@ -4,10 +4,11 @@ import numpy as np
 from Player import Player
 
 class MCTSNode: #temos de criar esta classe de nós para  guardar a árvore
-    def __init__(self, board, parent = None, move = None):
+    def __init__(self, board, parent = None, move = None, current_piece = None):
         self.board = board #o estado do tabuleiro neste nó
         self.parent = parent #nó pai: para a Retropropagação
         self.move = move #jogada que nos trouxe a este estado
+        self.current_piece = current_piece #guarda a peça que efetuou a jogada
 
         self.children = [] #nós filhos: proxs jogadas
         self.wins = 0 #quantas vitórias
@@ -31,10 +32,15 @@ class MCTSAIPlayer (Player):
     def __init__(self, piece, max_iterations=1000):
         super().__init__(piece)
         self.max_iterations = max_iterations #nº variavel de iterações
+        self.opponent_piece = 2 if piece == 1 else 1
     
 
     def get_move(self, board):
-        root = MCTSNode(board) #raiz da árvore é o estado atual do jogo
+        p1_count = np.count_nonzero(board.grid == 1)
+        p2_count = np.count_nonzero(board.grid == 2)
+        root_piece = 2 if p1_count == p2_count else 1
+
+        root = MCTSNode(board, current_piece=root_piece) #raiz da árvore é o estado atual do jogo, e a peça é a que jogou
         
         for _ in range(self.max_iterations):
             node = root
@@ -48,29 +54,24 @@ class MCTSAIPlayer (Player):
                 move = random.choice(node.untried_moves) #vamos escolher uma jogada aleatória dos movimentos ainda por testar
                 node.untried_moves.remove(move) # e vamos removê-la das não testadas
 
-                #se a raiz é a nossa peça, os filhos de profundidade ímpar são do oponente
-                current_piece = self.piece if (self.get_depth(node) % 2 == 0) else (2 if self.piece == 1 else 1)
+                #a peça que vai jogar agora é a adversária da ultima que jogou neste nó
+                next_piece = 2 if node.current_piece == 1 else 1
 
                 new_board = node.board.copy() #cria um novo tabuleiro
-                new_board.drop_piece(move, current_piece) #faz a jogada
+                new_board.drop_piece(move, next_piece) #faz a jogada
 
-                new_node = MCTSNode(new_board, parent = node, move = move) #criamos o novo filho, resultante desta jogada
+                new_node = MCTSNode(new_board, parent = node, move = move, current_piece=next_piece) #criamos o novo filho, resultante desta jogada
                 node.children.append(new_node)
-
                 node = new_node
 
             #fase 3: simulação 
-            resultado = self.simulate(node.board) #jogar à sorte a partir do nó onde parámos, até o jogo acabar
+            resultado = self.simulate(node.board, node.current_piece) #jogar à sorte a partir do nó onde parámos, até o jogo acabar
 
             #fase backpropagation
             while node is not None:
                 node.visits += 1
-                if resultado != 0:
-                    node_piece = self.piece if (self.get_depth(node) % 2 != 0) else (2 if self.piece == 1 else 1)
-                    if resultado == node_piece:
-                        node.wins += 1
-                    elif resultado != 0:
-                        pass
+                if resultado != 0 and resultado == node.current_piece:
+                    node.wins += 1
                     
                 node = node.parent
             
@@ -82,29 +83,19 @@ class MCTSAIPlayer (Player):
         best_child = max(root.children, key = lambda c: c.visits)
         return best_child.move
         
-    def get_depth(self, node):
-        depth = 0
-        while node.parent is not None:
-            depth += 1
-            node = node.parent
-        return depth
-    
 
-    def simulate(self, board):
+    def simulate(self, board, last_piece):
         tabuleiro = board.copy()
-        opponent = 2 if self.piece == 1 else 1 # vamor buscar o nosso oponente
         
+        if tabuleiro.check_winner(1): #podemos ser nós os vencedores
+            return 1
+        if tabuleiro.check_winner(2): #ou pode ser o nosso oponente
+            return 2
         if tabuleiro.is_board_full(): #se estiver tudo cheio, houve um empate
             return 0
-        elif tabuleiro.check_winner(self.piece): #podemos ser nós os vencedores
-            return self.piece
-        elif tabuleiro.check_winner(opponent): #ou pode ser o nosso oponente
-            return opponent
         
-        p1_count = np.count_nonzero(tabuleiro.grid == 1)
-        p2_count = np.count_nonzero(tabuleiro.grid == 2)
-        current_piece = 1 if p1_count == p2_count else 2
-
+        current_piece = 2 if last_piece == 1 else 1
+        
         while not tabuleiro.is_board_full():
             moves = tabuleiro.get_valid_moves()
             if not moves: break
