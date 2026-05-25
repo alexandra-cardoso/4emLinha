@@ -65,16 +65,6 @@ class MinimaxAIPlayer(Player):
 
     
     def evaluate_board(self, board, player):
-        """
-        Avalia o estado do tabuleiro do ponto de vista de 'player'.
-
-        Critérios considerados:
-          - Vitória/derrota imediata
-          - Sequências de 3 peças (com espaço livre)
-          - Sequências de 2 peças (com espaço livre)
-          - Ameaças do adversário
-          - Controlo da coluna central
-        """
         grid = board.grid
         rows, cols = grid.shape
         opponent = self.opponent_piece
