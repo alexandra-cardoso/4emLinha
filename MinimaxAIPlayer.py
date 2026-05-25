@@ -11,28 +11,25 @@ class MinimaxAIPlayer(Player):
 
     def get_move(self, board):
         # Arranca o algoritmo Minimax e guarda apenas a coluna escolhida
-        _, col = self._minimax(board, self.max_depth, -math.inf, math.inf, True)
+        _, col = self._minimax(board, self.max_depth, -math.inf, math.inf, True)#metemos alpha como -infinito e o beta como +infinito
         return col
 
     def _minimax(self, board, depth, alpha, beta, maximizing):
-        valid_moves = board.get_valid_moves()
-        # Descobre quem é o adversário de forma dinâmica
-        opponent_piece = 2 if self.piece == 1 else 1
+        valid_moves = board.get_valid_moves()#vê as posições livre chamando a função do Connet4board
+        opponent_piece = 2 if self.piece == 1 else 1 # Descobre quem é o adversário 
 
-        # Vitória, Derrota, Empate ou Limite de Profundidade)
         if board.check_winner(self.piece):
-            return (1_000_000 + depth, None)   # Ganhámos! Bónus por ser rápido
+            return (1_000_000 + depth, None)   # ganhar
         if board.check_winner(opponent_piece):
-            return (-1_000_000 - depth, None)  # Perdemos! Penalização por perder tarde
+            return (-1_000_000 - depth, None)  # perder
         if board.is_board_full():
-            return (0, None)                   # Empate (neutro)
+            return (0, None)                   # empate
         if depth == 0:
-            return (self.evaluate_board(board, self.piece), None)  # Chegámos ao limite, avalia o tabuleiro
-
-        # Jogada de segurança (meio do tabuleiro) caso algo falhe
+            return (self.evaluate_board(board, self.piece), None)  # se chegámos ao limite, avalia o tabuleiro
+       
         best_col = valid_moves[len(valid_moves) // 2]  
 
-        #Tentar ter a maior pontuação possível
+        #tenta ter a maior pontuação possível
         if maximizing:
             best_score = -math.inf
             for col in self._order_moves(valid_moves, board):
@@ -46,13 +43,13 @@ class MinimaxAIPlayer(Player):
                     best_score = score
                     best_col = col
                 
-                # Poda Alpha-Beta (se já temos uma jogada ótima, não perdemos tempo a ver o resto)
+                # corte Alpha-Beta (se já temos uma jogada ótima, não perdemos tempo a ver o resto)
                 alpha = max(alpha, best_score)
                 if alpha >= beta:
                     break  
             return (best_score, best_col)
             
-        #Ele vai tentar dar-nos a menor pontuação possível
+        #vai tentar dar-nos a menor pontuação possível
         else:
             best_score = math.inf
             for col in self._order_moves(valid_moves, board):
@@ -71,20 +68,18 @@ class MinimaxAIPlayer(Player):
             return (best_score, best_col)
 
     def _order_moves(self, valid_moves, board):
-        # testar primeiro as colunas do meio.
-        # Assim a poda Alpha-Beta corta muito mais ramos inúteis.
+        # testa primeiro as colunas do meio
         grid = board.grid
         cols = len(grid[0]) if len(grid) > 0 else 7
         center = cols // 2
         return sorted(valid_moves, key=lambda c: abs(c - center))
 
     def evaluate_board(self, board, player):
-        # Esta função dá uma "nota" ao tabuleiro atual
         grid = board.grid
         rows = len(grid)
         cols = len(grid[0]) if rows > 0 else 7
         
-        # Tenta ir buscar o limite para ganhar, previne erros caso os testes sejam diferentes
+        # tenta ir buscar o limite para ganhar
         try:
             n = board.n_connect
         except AttributeError:
@@ -93,12 +88,11 @@ class MinimaxAIPlayer(Player):
         opponent = 2 if player == 1 else 1
         score = 0
         
-        # Ter peças no centro vale ouro, ganha pontos extra!
         center_col = cols // 2
         center_array = [grid[r][center_col] for r in range(rows)]
         score += center_array.count(player) * 6
 
-        # Avaliar todas as linhas possíveis (Horizontal, Vertical, Diagonal)
+        # avalia todas as linhas possíveis (Horizontal, Vertical, Diagonal)
         for r in range(rows):                        
             for c in range(cols - n + 1):
                 window = [grid[r][c + i] for i in range(n)]
@@ -122,13 +116,13 @@ class MinimaxAIPlayer(Player):
         return score
 
     def _score_window(self, window, player, opponent, n):
-        # Dá pontos se estivermos quase a ganhar e tira pontos se for o adversário
+        # dá pontos se estivermos quase a ganhar e tira pontos se for o adversário
         score = 0
         player_count   = window.count(player)
         opponent_count = window.count(opponent)
         empty_count    = window.count(0)
 
-        # Ofensiva: valorizar as nossas sequências
+        # para o caso de ofensiva : valoriza as nossas sequências
         if player_count == n:                              
             score += 500
         elif player_count == n - 1 and empty_count == 1:  
@@ -136,7 +130,7 @@ class MinimaxAIPlayer(Player):
         elif player_count == n - 2 and empty_count == 2:  
             score += 10
 
-        # bloqueia o adversário se ele estiver a uma ou duas peças de ganhar
+        # para o caso da defensiva : bloqueia o adversário se ele estiver a uma ou duas peças de ganhar
         if opponent_count == n - 1 and empty_count == 1:  
             score -= 80
         elif opponent_count == n - 2 and empty_count == 2:
