@@ -19,7 +19,7 @@ class MinimaxAIPlayer(Player):
         # Descobre quem é o adversário de forma dinâmica
         opponent_piece = 2 if self.piece == 1 else 1
 
-        # 1. VERIFICAR CASOS DE PARAGEM (Vitória, Derrota, Empate ou Limite de Profundidade)
+        # Vitória, Derrota, Empate ou Limite de Profundidade)
         if board.check_winner(self.piece):
             return (1_000_000 + depth, None)   # Ganhámos! Bónus por ser rápido
         if board.check_winner(opponent_piece):
@@ -32,7 +32,7 @@ class MinimaxAIPlayer(Player):
         # Jogada de segurança (meio do tabuleiro) caso algo falhe
         best_col = valid_moves[len(valid_moves) // 2]  
 
-        # 2. O NOSSO TURNO (Tentar ter a maior pontuação possível)
+        #Tentar ter a maior pontuação possível
         if maximizing:
             best_score = -math.inf
             for col in self._order_moves(valid_moves, board):
@@ -52,7 +52,7 @@ class MinimaxAIPlayer(Player):
                     break  
             return (best_score, best_col)
             
-        # 3. TURNO DO ADVERSÁRIO (Ele vai tentar dar-nos a menor pontuação possível)
+        #Ele vai tentar dar-nos a menor pontuação possível
         else:
             best_score = math.inf
             for col in self._order_moves(valid_moves, board):
@@ -71,7 +71,7 @@ class MinimaxAIPlayer(Player):
             return (best_score, best_col)
 
     def _order_moves(self, valid_moves, board):
-        # Truque de otimização: testar primeiro as colunas do meio.
+        # testar primeiro as colunas do meio.
         # Assim a poda Alpha-Beta corta muito mais ramos inúteis.
         grid = board.grid
         cols = len(grid[0]) if len(grid) > 0 else 7
@@ -136,7 +136,7 @@ class MinimaxAIPlayer(Player):
         elif player_count == n - 2 and empty_count == 2:  
             score += 10
 
-        # Defensiva: bloquear o adversário se ele estiver a uma ou duas peças de ganhar
+        # bloqueia o adversário se ele estiver a uma ou duas peças de ganhar
         if opponent_count == n - 1 and empty_count == 1:  
             score -= 80
         elif opponent_count == n - 2 and empty_count == 2:
