@@ -6,7 +6,7 @@ class MinimaxAIPlayer(Player):
 
     def __init__(self, piece, max_depth=5):
        
-        self.piece = piece
+        super().__init__(piece)     
         self.max_depth = max_depth
         self.opponent_piece = 2 if piece == 1 else 1
 
@@ -67,6 +67,7 @@ class MinimaxAIPlayer(Player):
     def evaluate_board(self, board, player):
         grid = board.grid
         rows, cols = grid.shape
+        n = board.n_connect                             
         opponent = self.opponent_piece
         score = 0
 
@@ -101,31 +102,22 @@ class MinimaxAIPlayer(Player):
 
         return score
 
-    def _score_window(self, window, player, opponent):
-        """
-        Pontua uma janela de 4 células.
-
-        Regras:
-          - 3 peças do jogador + 1 vazia  →  +50
-          - 2 peças do jogador + 2 vazias →  +10
-          - 3 peças do adversário + 1 vazia → -80  (ameaça urgente)
-          - 2 peças do adversário + 2 vazias → -5
-        """
+    def _score_window(self, window, player, opponent, n):          # FIX 2: n dinâmico
         score = 0
         player_count   = window.count(player)
         opponent_count = window.count(opponent)
         empty_count    = window.count(0)
-
-        if player_count == 4:
-            score += 500          # já ganhou (capturado também no check_winner)
-        elif player_count == 3 and empty_count == 1:
+ 
+        if player_count == n:
+            score += 500
+        elif player_count == n - 1 and empty_count == 1:
             score += 50
-        elif player_count == 2 and empty_count == 2:
+        elif player_count == n - 2 and empty_count == 2:
             score += 10
-
-        if opponent_count == 3 and empty_count == 1:
+ 
+        if opponent_count == n - 1 and empty_count == 1:
             score -= 80           # bloquear ameaça imediata do adversário
-        elif opponent_count == 2 and empty_count == 2:
+        elif opponent_count == n - 2 and empty_count == 2:
             score -= 5
-
+ 
         return score
