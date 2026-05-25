@@ -80,7 +80,7 @@ if __name__ == "__main__":
     p2 = RandomAIPlayer(piece=2)
     #p2 = HumanPlayer(piece=2)
     game = Connect4Game()
-    winner = game.run_game(p1, p2, headless= False)
+    winner = game.run_game(p1, p2, headless= True)
     if winner == 0:
         print("Draw!")
     else:
