@@ -11,7 +11,7 @@ class Connect4Board:
         self.grid = np.zeros((self.rows, self.cols), dtype=int)
 
     def copy(self):
-        new_board = Connect4Board()
+        new_board = Connect4Board(self.rows, self.cols, self.n_connect)
         new_board.grid = self.grid.copy()
         return new_board
 
