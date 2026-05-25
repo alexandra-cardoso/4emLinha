@@ -18,9 +18,9 @@ class Connect4Game:
     def __init__(self):
         pass
 
-    def run_game(self, player1, player2, headless = False, rows = 6, cols = 7):
+    def run_game(self, player1, player2, headless = False, rows = 6, cols = 7, n_connect = 4 ):
 
-        board = Connect4Board(rows, cols)
+        board = Connect4Board(rows, cols, n_connect)
 
         gui = Connect4Gui(board,rows,cols)
         if (not headless):
@@ -29,6 +29,7 @@ class Connect4Game:
         players = [player1, player2]
         turn = 0
         game_over = False
+        winner = 0
 
         while not game_over:
             current_player = players[turn]
@@ -47,12 +48,14 @@ class Connect4Game:
                         print(f"Player {current_player.piece} wins!")
 
                     game_over = True
+                    winner = current_player.piece
 
                 elif board.is_board_full():
                     if (not headless):
                         gui.draw_game()
                     print("Drwa!!!!")
                     game_over = True
+                    winner = 0
 
                 if(not headless):
                     gui.draw_board(board)
@@ -65,16 +68,20 @@ class Connect4Game:
             if game_over and not headless:
                 gui.game_over()
 
+        return winner
 
 # =========================
 # RUN CONFIGURATION
 # =========================
 
 if __name__ == "__main__":
-    p1 = MinimaxAIPlayer(piece=1)
-    #p1 = RandomAIPlayer(piece=1)
-    #p2 = RandomAIPlayer(piece=2)
+    #p1 = HumanPlayer(piece=1)
+    p1 = RandomAIPlayer(piece=1)
+    p2 = RandomAIPlayer(piece=2)
     #p2 = HumanPlayer(piece=2)
-    p2 = MCTSAIPlayer(piece=2)
     game = Connect4Game()
-    game.run_game(p1, p2, headless= False)
+    winner = game.run_game(p1, p2, headless= True)
+    if winner == 0:
+        print("Draw!")
+    else:
+        print(f"Winner is player {winner}")
